@@ -1,0 +1,1879 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quantum Job Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #ffffff;
+            color: #223047;
+            line-height: 1.6;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #365C81 0%, #4876A6 100%);
+            color: white;
+            padding: 1.5rem 2rem;
+            box-shadow: 0 4px 12px rgba(15, 98, 254, 0.15);
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header-title {
+            font-size: 2rem;
+            font-weight: 600;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-subtitle {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            margin-top: 0.25rem;
+        }
+
+        .page {
+            display: none;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        .home-page {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            min-height: calc(100vh - 120px);
+        }
+
+        .dashboard-page {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .feature-page {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #365C81 0%, #4876A6  100%);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .loading-screen.active {
+            display: flex;
+        }
+
+        .loading-circle {
+            position: relative;
+            width: 120px;
+            height: 120px;
+        }
+
+        .loading-circle svg {
+            width: 120px;
+            height: 120px;
+            transform: rotate(-90deg);
+        }
+
+        .loading-circle-bg {
+            fill: none;
+            stroke: rgba(255, 255, 255, 0.2);
+            stroke-width: 8;
+        }
+
+        .loading-circle-progress {
+            fill: none;
+            stroke: rgb(165, 182, 195);
+            stroke-width: 8;
+            stroke-linecap: round;
+            stroke-dasharray: 377;
+            stroke-dashoffset: 377;
+            transition: stroke-dashoffset 0.3s ease;
+        }
+
+        .loading-percentage {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color:rgb(165, 182, 195);
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .loading-text {
+            color: rgb(165, 182, 195);
+            margin-top: 2rem;
+            font-size: 1.1rem;
+            text-align: center;
+        }
+
+        .video-section {
+            background: linear-gradient(145deg, #DEECF8 0%, #DEECF8 100%);
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 8px 32px rgba(36, 55, 93, 0.08);
+            border: 1px solid  rgba(36, 55, 93, 0.08);
+        }
+
+        .video-container {
+            width: 100%;
+            height: 400px;
+            background: linear-gradient(135deg, #365C81 0%, #4876A6 100%);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(15, 98, 254, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.1rem;
+        }
+
+        .quantum-symbol {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.9;
+        }
+
+        .control-section {
+            background: linear-gradient(145deg, #ffffff 0%, #DEECF8 100%);
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 8px 32px rgba(15, 98, 254, 0.08);
+            border: 1px solid rgba(15, 98, 254, 0.1);
+        }
+
+        .user-type-selector {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .user-type-btn {
+            flex: 1;
+            padding: 1rem 1.5rem;
+            border: 2px solid #e0e0e0;
+            background: white;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            text-align: center;
+        }
+
+        .user-type-btn:hover {
+            border-color: #365C81;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(15, 98, 254, 0.15);
+        }
+
+        .user-type-btn.active {
+            background: linear-gradient(135deg, #365C81 0%, #4876A6  100%);
+            color: white;
+            border-color: transparent;
+        }
+
+        .form-section {
+            display: none;
+        }
+
+        .form-section.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #223047;
+        }
+
+        .form-input, .user-select {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-input:focus, .user-select:focus {
+            outline: none;
+            border-color: #365C81;
+            box-shadow: 0 0 0 3px rgba(15, 98, 254, 0.1);
+        }
+
+        .connect-btn {
+            width: 100%;
+            padding: 1rem;
+            background: linear-gradient(135deg, #365C81 0%, #4876A6  100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .connect-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(15, 98, 254, 0.3);
+        }
+
+        .connect-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .dashboard-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #223047;
+        }
+
+        .back-to-login-btn, .back-to-dashboard-btn {
+            background: linear-gradient(135deg,  #365C81 0%, #4876A6  100%);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(15, 98, 254, 0.2);
+        }
+
+        .back-to-login-btn:hover, .back-to-dashboard-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(15, 98, 254, 0.3);
+        }
+
+        .info-section {
+            background: linear-gradient(145deg, #ffffff 0%, #DEECF8 100%);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 8px 32px rgba(15, 98, 254, 0.08);
+            border: 1px solid rgba(15, 98, 254, 0.1);
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .info-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(15, 98, 254, 0.1);
+        }
+
+        .info-card-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #365C81;
+            margin-bottom: 0.5rem;
+        }
+
+        .info-card-label {
+            color: #223047;
+            font-size: 0.9rem;
+        }
+
+        .researcher-only {
+            display: none;
+        }
+
+        .researcher-only.show {
+            display: block;
+        }
+
+        .features-section {
+            background: linear-gradient(145deg, #ffffff 0%, #DEECF8 100%);
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 8px 32px rgba(15, 98, 254, 0.08);
+            border: 1px solid rgba(15, 98, 254, 0.1);
+        }
+
+        .features-title {
+            text-align: center;
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin-bottom: 2rem;
+            color: #223047;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .feature-card {
+            background: linear-gradient(135deg, #365C81 0%, #4876A6  100%);
+            padding: 1.5rem;
+            border-radius: 16px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(15, 98, 254, 0.2);
+            border: none;
+            color: white;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 32px rgba(15, 98, 254, 0.3);
+        }
+
+        .feature-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        .feature-name {
+            font-weight: 600;
+            color: white;
+            margin-bottom: 0;
+        }
+
+        .error-message {
+            background: #ffe6e6;
+            color: #d32f2f;
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            border: 1px solid #ffcdd2;
+        }
+
+        .feature-content {
+            background: linear-gradient(145deg, #ffffff 0%, #DEECF8 100%);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 8px 32px rgba(15, 98, 254, 0.08);
+            border: 1px solid rgba(15, 98, 254, 0.1);
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .data-table th, .data-table td {
+            padding: 0.75rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .data-table th {
+            background: linear-gradient(135deg,  #365C81 0%, #4876A6  100%);
+            color: white;
+            font-weight: 600;
+        }
+
+        .status-badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .status-done {
+            background: #e8f5e8;
+            color: #2e7d32;
+        }
+
+        .status-running {
+            background: #fff3cd;
+            color: #f57c00;
+        }
+
+        .status-error {
+            background: #ffebee;
+            color: #d32f2f;
+        }
+
+        .status-queued {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        @media (max-width: 768px) {
+            .home-page {
+                grid-template-columns: 1fr;
+                padding: 1rem;
+            }
+
+            .features-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+
+            .info-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <div>
+                <h1 class="header-title">Quantum Job Tracker</h1>
+                <p class="header-subtitle">Advanced Quantum Computing Management Platform</p>
+            </div>
+        </div>
+    </header>
+
+    <div class="loading-screen" id="loading-screen">
+        <div>
+            <div class="loading-circle">
+                <svg>
+                    <circle class="loading-circle-bg" cx="60" cy="60" r="50"></circle>
+                    <circle class="loading-circle-progress" cx="60" cy="60" r="50" id="progress-circle"></circle>
+                </svg>
+                <div class="loading-percentage" id="loading-percentage">0%</div>
+            </div>
+            <div class="loading-text" id="loading-text">Loading feature...</div>
+        </div>
+    </div>
+
+    <!-- HOME PAGE -->
+    <div class="page active" id="home-page">
+        <div class="home-page">
+            <div class="video-section">
+                <h2 style="margin-bottom: 1rem; color: #223047;">Quantum Computing Overview</h2>
+                <div class="video-container">
+                    <div style="text-align: center;">
+                        <div class="quantum-symbol">⚛️</div>
+                        <div style="font-size: 1.2rem; font-weight: 500;">IBM Quantum Platform</div>
+                        <div style="font-size: 0.9rem; opacity: 0.8; margin-top: 0.5rem;">Connect to access your quantum jobs</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="control-section">
+                <h2 style="margin-bottom: 1.5rem; color: #223047;">Access Dashboard</h2>
+                
+                <div class="user-type-selector">
+                    <button class="user-type-btn active" onclick="selectUserType('user')">
+                        👤 User
+                    </button>
+                    <button class="user-type-btn" onclick="selectUserType('researcher')">
+                        🔬 Researcher
+                    </button>
+                </div>
+
+                <div id="user-form" class="form-section active">
+                    <div class="form-group">
+                        <label class="form-label">Select User</label>
+                        <select class="user-select" id="user-select">
+                            <option value="">Choose a user...</option>
+                            <option value="Varsha">Varsha</option>
+                            <option value="Hema">Hema</option>
+                            <option value="Maggi">Maggi</option>
+                            <option value="Naini">Naini</option>
+                            <option value="Gheya">Gheya</option>
+                            <option value="Sania">Sania</option>
+                            <option value="Valli">Valli</option>
+                        </select>
+                    </div>
+                    <button class="connect-btn" onclick="connectUser()" id="connect-user-btn">Connect to IBM Quantum</button>
+                </div>
+
+                <div id="researcher-form" class="form-section">
+                    <p style="margin-bottom: 1.5rem; color: #223047;">
+                        Researcher mode provides direct access to all backend APIs and aggregated quantum computing data.
+                    </p>
+                    <button class="connect-btn" onclick="connectResearcher()">Access Research Dashboard</button>
+                </div>
+
+                <div id="error-message" class="error-message" style="display: none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DASHBOARD PAGE -->
+    <div class="page" id="dashboard-page">
+        <div class="dashboard-page">
+            <div class="dashboard-header">
+                <h2 class="dashboard-title">Quantum Dashboard - <span id="current-user"></span></h2>
+                <button class="back-to-login-btn" onclick="backToLogin()">
+                    ← Back to Login
+                </button>
+            </div>
+
+            <div class="info-section">
+                <div class="info-grid">
+                    <div class="info-card">
+                        <div class="info-card-value" id="jobs-completed">0</div>
+                        <div class="info-card-label">Jobs Completed</div>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-card-value" id="jobs-running">0</div>
+                        <div class="info-card-label">Jobs Running</div>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-card-value" id="jobs-queued">0</div>
+                        <div class="info-card-label">Jobs Queued</div>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-card-value" id="connection-status">
+                            <span style="color: #223047;">●</span> Disconnected
+                        </div>
+                        <div class="info-card-label">Connection Status</div>
+                    </div>
+                    <div class="info-card researcher-only" id="total-users-card">
+                        <div class="info-card-value" id="total-users">0</div>
+                        <div class="info-card-label">Total Users</div>
+                    </div>
+                    <div class="info-card researcher-only" id="total-jobs-card">
+                        <div class="info-card-value" id="total-jobs">0</div>
+                        <div class="info-card-label">Total Jobs</div>
+                    </div>
+                    <div class="info-card researcher-only" id="active-systems-card">
+                        <div class="info-card-value" id="active-systems">0</div>
+                        <div class="info-card-label">Active Systems</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="features-section">
+                <h2 class="features-title">Quantum Dashboard Features</h2>
+                
+                <div class="features-grid">
+                    <div class="feature-card" onclick="openFeature('time-predictor')">
+                        <span class="feature-icon">⏱️</span>
+                        <div class="feature-name">Time Predictor</div>
+                    </div>
+                    
+                    <div class="feature-card" onclick="openFeature('backend-heatmap')">
+                        <span class="feature-icon">🗺️</span>
+                        <div class="feature-name">Backend Heatmap</div>
+                    </div>
+                    
+                    <div class="feature-card" onclick="openFeature('smart-notifications')">
+                        <span class="feature-icon">🔔</span>
+                        <div class="feature-name">Smart Notifications</div>
+                    </div>
+                    
+                    <div class="feature-card" onclick="openFeature('chat-assistant')">
+                        <span class="feature-icon">💬</span>
+                        <div class="feature-name">Chat Assistant</div>
+                    </div>
+                    
+                    <div class="feature-card" onclick="openFeature('user-leaderboard')">
+                        <span class="feature-icon">🏆</span>
+                        <div class="feature-name">User Leaderboard</div>
+                    </div>
+                </div>
+
+                <div class="features-grid">
+                    <div class="feature-card" onclick="openFeature('failure-doctor')">
+                        <span class="feature-icon">🔧</span>
+                        <div class="feature-name">Failure Doctor</div>
+                    </div>
+                    
+                    <div class="feature-card" onclick="openFeature('trends-analyzer')">
+                        <span class="feature-icon">📊</span>
+                        <div class="feature-name">Trends Analyzer</div>
+                    </div>
+                    
+                    <div class="feature-card" onclick="openFeature('jobs-tracker')">
+                        <span class="feature-icon">🌍</span>
+                        <div class="feature-name">Jobs Tracker</div>
+                    </div>
+                    
+                    <div class="feature-card" onclick="openFeature('resource-meter')">
+                        <span class="feature-icon">📈</span>
+                        <div class="feature-name">Resource Meter</div>
+                    </div>
+                    
+                    <div class="feature-card" onclick="openFeature('backend-comparator')">
+                        <span class="feature-icon">⚖️</span>
+                        <div class="feature-name">Backend Comparator</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FEATURE PAGES -->
+    <div class="page" id="feature-page">
+        <div class="feature-page">
+            <div class="dashboard-header">
+                <h2 class="dashboard-title" id="feature-title">Feature</h2>
+                <button class="back-to-dashboard-btn" onclick="backToDashboard()">
+                    ← Back to Dashboard
+                </button>
+            </div>
+            <div id="feature-content" class="feature-content">
+                <!-- Feature content will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let currentUserType = 'user';
+        let currentUser = '';
+        let isConnected = false;
+        let refreshInterval = null;
+        let websocket = null;
+        const BASE_URL = 'http://localhost:8000';
+
+        // Session management
+        function saveSession(userType, userName) {
+            sessionStorage.setItem('quantumTracker_userType', userType);
+            sessionStorage.setItem('quantumTracker_userName', userName);
+            sessionStorage.setItem('quantumTracker_isConnected', 'true');
+        }
+
+        function loadSession() {
+            const userType = sessionStorage.getItem('quantumTracker_userType');
+            const userName = sessionStorage.getItem('quantumTracker_userName');
+            const connected = sessionStorage.getItem('quantumTracker_isConnected');
+
+            if (userType && userName && connected === 'true') {
+                currentUserType = userType;
+                currentUser = userName;
+                isConnected = true;
+                showDashboard(userType, userName, false);
+                return true;
+            }
+            return false;
+        }
+
+        function clearSession() {
+            sessionStorage.removeItem('quantumTracker_userType');
+            sessionStorage.removeItem('quantumTracker_userName');
+            sessionStorage.removeItem('quantumTracker_isConnected');
+        }
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', function() {
+            if (!loadSession()) {
+                // Stay on login page
+            }
+        });
+
+        function selectUserType(type) {
+            currentUserType = type;
+            
+            document.querySelectorAll('.user-type-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            document.querySelectorAll('.form-section').forEach(section => {
+                section.classList.remove('active');
+            });
+            document.getElementById(type + '-form').classList.add('active');
+            hideError();
+        }
+
+        async function connectUser() {
+            const selectedUser = document.getElementById('user-select').value;
+            
+            if (!selectedUser) {
+                showError('Please select a user');
+                return;
+            }
+
+            const btn = document.getElementById('connect-user-btn');
+            btn.disabled = true;
+            btn.textContent = 'Connecting...';
+            hideError();
+
+            try {
+                // Test backend connection first
+                const response = await fetch(`${BASE_URL}/`);
+                if (!response.ok) {
+                    throw new Error('No backend data fetched');
+                }
+
+                await showDashboard('user', selectedUser);
+                
+            } catch (error) {
+                console.error('Connection error:', error);
+                showError('No backend data fetched');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Connect to IBM Quantum';
+            }
+        }
+
+        async function connectResearcher() {
+            try {
+                // Test backend connection first
+                const response = await fetch(`${BASE_URL}/`);
+                if (!response.ok) {
+                    throw new Error('No backend data fetched');
+                }
+
+                await showDashboard('researcher', 'Researcher');
+                
+            } catch (error) {
+                console.error('Connection error:', error);
+                showError('No backend data fetched');
+            }
+        }
+
+        async function showDashboard(type, userName, animate = true) {
+            if (animate) {
+                document.getElementById('home-page').classList.remove('active');
+                document.getElementById('dashboard-page').classList.add('active');
+            } else {
+                // Direct navigation for session restore
+                document.getElementById('home-page').classList.remove('active');
+                document.getElementById('dashboard-page').classList.add('active');
+            }
+            
+            currentUser = userName;
+            isConnected = true;
+            
+            // Save session
+            saveSession(type, userName);
+            
+            // Update UI
+            document.getElementById('current-user').textContent = userName;
+            document.getElementById('connection-status').innerHTML = '<span style="color: #365C81;">●</span> Connected';
+            
+            // Show researcher-only cards if researcher mode
+            if (type === 'researcher') {
+                hideResearcherFeatures();
+                document.querySelectorAll('.researcher-only').forEach(card => {
+                    card.classList.add('show');
+                });
+            }
+            
+            // Load dashboard data
+            await loadDashboardData(type, userName);
+            
+            // Start auto-refresh
+            startAutoRefresh(type, userName);
+            
+            // Connect WebSocket
+            connectWebSocket();
+        }
+
+        async function loadDashboardData(type, userName) {
+            try {
+                if (type === 'user') {
+                    // Load user-specific data
+                    const jobsResponse = await fetch(`${BASE_URL}/jobs/${userName}?limit=50`);
+                    if (jobsResponse.ok) {
+                        const jobsData = await jobsResponse.json();
+                        updateJobStats(jobsData.jobs);
+                    } else {
+                        throw new Error('Failed to fetch jobs data');
+                    }
+                    
+                } else if (type === 'researcher') {
+                hideResearcherFeatures();
+                    // Load researcher data
+                    const usersResponse = await fetch(`${BASE_URL}/users`);
+                    const analyticsResponse = await fetch(`${BASE_URL}/analytics/all-users`);
+                    
+                    if (usersResponse.ok) {
+                        const usersData = await usersResponse.json();
+                        document.getElementById('total-users').textContent = usersData.total_users;
+                    }
+                    
+                    if (analyticsResponse.ok) {
+                        const analyticsData = await analyticsResponse.json();
+                        document.getElementById('total-jobs').textContent = analyticsData.summary.total_jobs_all_users || 0;
+                        document.getElementById('active-systems').textContent = Object.keys(analyticsData.user_activity).length;
+                    }
+                }
+                
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+                showError('IBM Quantum service errors');
+            }
+        }
+
+        function updateJobStats(jobs) {
+            let completed = 0;
+            let running = 0;
+            let queued = 0;
+            
+            jobs.forEach(job => {
+                switch (job.status) {
+                    case 'DONE':
+                        completed++;
+                        break;
+                    case 'RUNNING':
+                        running++;
+                        break;
+                    case 'QUEUED':
+                    case 'INITIALIZING':
+                        queued++;
+                        break;
+                }
+            });
+            
+            document.getElementById('jobs-completed').textContent = completed;
+            document.getElementById('jobs-running').textContent = running;
+            document.getElementById('jobs-queued').textContent = queued;
+        }
+
+        function startAutoRefresh(type, userName) {
+            if (refreshInterval) clearInterval(refreshInterval);
+            
+            refreshInterval = setInterval(() => {
+                if (isConnected) {
+                    loadDashboardData(type, userName);
+                }
+            }, 30000); // Refresh every 30 seconds
+        }
+
+        function connectWebSocket() {
+            try {
+                websocket = new WebSocket(`ws://localhost:8000/ws/updates`);
+                
+                websocket.onmessage = function(event) {
+                    const data = JSON.parse(event.data);
+                    if (data.type === 'backend_status_update') {
+                        // Refresh dashboard data when backend status updates
+                        loadDashboardData(currentUserType, currentUser);
+                    }
+                };
+                
+                websocket.onerror = function(error) {
+                    console.log('WebSocket error:', error);
+                };
+                
+            } catch (error) {
+                console.log('WebSocket connection failed:', error);
+            }
+        }
+
+        async function openFeature(featureName) {
+            const loadingScreen = document.getElementById('loading-screen');
+            const progressCircle = document.getElementById('progress-circle');
+            const percentageText = document.getElementById('loading-percentage');
+            const loadingText = document.getElementById('loading-text');
+            
+            loadingScreen.classList.add('active');
+            loadingText.textContent = 'Loading feature...';
+            
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += Math.random() * 20;
+                if (progress > 100) progress = 100;
+                
+                const circumference = 2 * Math.PI * 50;
+                const offset = circumference - (progress / 100) * circumference;
+                progressCircle.style.strokeDashoffset = offset;
+                percentageText.textContent = Math.round(progress) + '%';
+                
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    setTimeout(async () => {
+                        loadingScreen.classList.remove('active');
+                        await loadFeaturePage(featureName);
+                    }, 500);
+                }
+            }, 150);
+        }
+
+        async function loadFeaturePage(featureName) {
+            document.getElementById('dashboard-page').classList.remove('active');
+            document.getElementById('feature-page').classList.add('active');
+            
+            const featureNames = {
+                'time-predictor': 'Time Predictor',
+                'backend-heatmap': 'Backend Heatmap',
+                'smart-notifications': 'Smart Notifications',
+                'chat-assistant': 'Chat Assistant',
+                'user-leaderboard': 'User Leaderboard',
+                'failure-doctor': 'Failure Doctor',
+                'trends-analyzer': 'Trends Analyzer',
+                'jobs-tracker': 'Jobs Tracker',
+                'resource-meter': 'Resource Meter',
+                'backend-comparator': 'Backend Comparator'
+            };
+            
+            document.getElementById('feature-title').textContent = featureNames[featureName];
+            
+            try {
+                await loadFeatureContent(featureName);
+            } catch (error) {
+                document.getElementById('feature-content').innerHTML = `
+                    <div class="error-message">
+                        Failed to load ${featureNames[featureName]}: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        async function loadFeatureContent(featureName) {
+            const content = document.getElementById('feature-content');
+            
+            switch (featureName) {
+                case 'backend-heatmap':
+                    await loadBackendHeatmap(content);
+                    break;
+                    
+                case 'smart-notifications':
+                    await loadNotifications(content);
+                    break;
+                    
+                case 'chat-assistant':
+                    await loadChatAssistant(content);
+                    break;
+                    
+                case 'user-leaderboard':
+                    await loadUserLeaderboard(content);
+                    break;
+                    
+                case 'failure-doctor':
+                    await loadFailureDoctor(content);
+                    break;
+                    
+                case 'jobs-tracker':
+                    await loadJobsTracker(content);
+                    break;
+                    
+                case 'resource-meter':
+                    await loadResourceMeter(content);
+                    break;
+                    
+                case 'backend-comparator':
+                    await loadBackendComparator(content);
+                    break;
+                    
+                case 'trends-analyzer':
+                    await loadTrendsAnalyzer(content);
+                    break;
+                    
+                case 'time-predictor':
+                    await loadTimePredictor(content);
+                    break;
+                    
+                default:
+                    content.innerHTML = '<p>Feature not implemented yet.</p>';
+            }
+        }
+
+        
+        async function loadBackendHeatmap(content) {
+            try {
+                const response = await fetch(`${BASE_URL}/heatmap/backends`);
+                if (!response.ok) throw new Error('Failed to fetch backend data');
+                
+                const data = await response.json();
+                
+                let html = `
+                    <h3>Backend Status Heatmap</h3>
+                    <p>Real-time status of quantum backends</p>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-top: 2rem;">
+                `;
+                
+                data.heatmap_data.forEach(backend => {
+                    const colorClass = backend.color === 'green' ? 'status-done' : 
+                                      backend.color === 'yellow' ? 'status-running' : 'status-error';
+                    
+                    html += `
+                        <div class="info-card">
+                            <h4>${backend.backend_name}</h4>
+                            <div class="status-badge ${colorClass}" style="margin: 0.5rem 0;">
+                                ${backend.status.toUpperCase()}
+                            </div>
+                            <p><strong>Pending Jobs:</strong> ${backend.pending_jobs}</p>
+                            <p><strong>Operational:</strong> ${backend.operational ? 'Yes' : 'No'}</p>
+                        </div>
+                    `;
+                });
+                
+                html += `</div>
+                    <canvas id="heatmapJobsChart" style="margin-top:2rem; max-height:400px;"></canvas>
+                    <canvas id="heatmapStatusChart" style="margin-top:2rem; max-height:400px;"></canvas>
+                `;
+                
+                content.innerHTML = html;
+                
+                // Chart 1: Pending Jobs per Backend
+                const ctx1 = document.getElementById('heatmapJobsChart').getContext('2d');
+                new Chart(ctx1, {
+                    type: 'bar',
+                    data: {
+                        labels: data.heatmap_data.map(b => b.backend_name),
+                        datasets: [{
+                            label: 'Pending Jobs',
+                            data: data.heatmap_data.map(b => b.pending_jobs),
+                            backgroundColor: 'rgba(37, 94, 193, 0.6)'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: { display: false },
+                            title: { display: true, text: 'Pending Jobs per Backend' }
+                        }
+                    }
+                });
+        
+                // Chart 2: Status distribution (Pie)
+                const ctx2 = document.getElementById('heatmapStatusChart').getContext('2d');
+                const statusCounts = {
+                    UP: data.heatmap_data.filter(b => b.status.toUpperCase() === 'UP').length,
+                    DOWN: data.heatmap_data.filter(b => b.status.toUpperCase() === 'DOWN').length,
+                    WARNING: data.heatmap_data.filter(b => b.status.toUpperCase() === 'WARNING').length
+                };
+                new Chart(ctx2, {
+                    type: 'pie',
+                    data: {
+                        labels: Object.keys(statusCounts),
+                        datasets: [{
+                            data: Object.values(statusCounts),
+                            backgroundColor: [
+                                'rgba(37, 94, 193, 0.6)', 
+                                'rgba(255, 99, 132, 0.6)', 
+                                'rgba(255, 206, 86, 0.6)'
+                            ]
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            title: { display: true, text: 'Backend Status Distribution' }
+                        }
+                    }
+                });
+                
+            } catch (error) {
+                content.innerHTML = `<div class="error-message">No backend data fetched</div>`;
+            }
+        }
+
+
+        async function loadNotifications(content) {
+            if (currentUserType === 'researcher') {
+                content.innerHTML = `<div class="error-message">Notifications not available in researcher mode</div>`;
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${BASE_URL}/notifications/${currentUser}`);
+                if (!response.ok) throw new Error('Failed to fetch notifications');
+                
+                const data = await response.json();
+                
+                let html = `
+                    <h3>Smart Notifications</h3>
+                    <p>Job status notifications for ${currentUser}</p>
+                    <div style="margin-top: 2rem;">
+                `;
+                
+                if (data.notifications.length === 0) {
+                    html += '<p>No notifications available.</p>';
+                } else {
+                    data.notifications.forEach(notification => {
+                        const typeClass = notification.type === 'success' ? 'status-done' : 
+                                         notification.type === 'error' ? 'status-error' : 'status-running';
+                        
+                        html += `
+                            <div class="info-card" style="text-align: left; margin-bottom: 1rem;">
+                                <div class="status-badge ${typeClass}">${notification.type.toUpperCase()}</div>
+                                <h4 style="margin: 0.5rem 0;">${notification.title}</h4>
+                                <p>${notification.message}</p>
+                                <small>Job ID: ${notification.job_id} | Backend: ${notification.backend}</small>
+                            </div>
+                        `;
+                    });
+                }
+                
+                html += '</div>';
+                content.innerHTML = html;
+                
+            } catch (error) {
+                content.innerHTML = `<div class="error-message">No backend data fetched</div>`;
+            }
+        }
+
+        async function loadChatAssistant(content) {
+            content.innerHTML = `
+                <h3>Quantum Chat Assistant</h3>
+                <p>Ask questions about backends, jobs, and quantum computing</p>
+                
+                <div style="background: white; border-radius: 12px; padding: 1.5rem; margin: 1rem 0; min-height: 300px; border: 1px solid #e0e0e0;">
+                    <div id="chat-messages" style="height: 250px; overflow-y: auto; margin-bottom: 1rem; padding: 1rem; background: #DEECF8; border-radius: 8px;">
+                        <div style="color: #223047; font-style: italic;">
+                            Welcome! Ask me about quantum backends, job status, or computing recommendations.
+                            <br><br>
+                            Try asking: "Which backend should I use?" or "Why did my job fail?"
+                        </div>
+                    </div>
+                    
+                    <div style="display: flex; gap: 1rem;">
+                        <input type="text" id="chat-input" placeholder="Ask me anything about quantum computing..." 
+                               style="flex: 1; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: 8px;">
+                        <button onclick="sendChatMessage()" style="background: linear-gradient(135deg, #365C81 0%, #249CA7 100%); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; cursor: pointer;">
+                            Send
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            // Add enter key listener
+            document.getElementById('chat-input').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    sendChatMessage();
+                }
+            });
+        }
+
+        async function sendChatMessage() {
+            const input = document.getElementById('chat-input');
+            const messages = document.getElementById('chat-messages');
+            const question = input.value.trim();
+            
+            if (!question) return;
+            
+            // Add user message
+            messages.innerHTML += `
+                <div style="margin-bottom: 1rem;">
+                    <div style="background: #365C81; color: white; padding: 0.5rem 1rem; border-radius: 12px; display: inline-block; max-width: 70%; margin-left: 30%;">
+                        ${question}
+                    </div>
+                </div>
+            `;
+            
+            input.value = '';
+            messages.scrollTop = messages.scrollHeight;
+            
+            try {
+                const response = await fetch(`${BASE_URL}/chatbot/query`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ question: question })
+                });
+                
+                if (!response.ok) throw new Error('Failed to get response');
+                
+                const data = await response.json();
+                
+                // Add bot response
+                messages.innerHTML += `
+                    <div style="margin-bottom: 1rem;">
+                        <div style="background: white; border: 1px solid #e0e0e0; padding: 0.5rem 1rem; border-radius: 12px; display: inline-block; max-width: 70%;">
+                            ${data.response}
+                        </div>
+                    </div>
+                `;
+                
+            } catch (error) {
+                messages.innerHTML += `
+                    <div style="margin-bottom: 1rem;">
+                        <div style="background: #ffebee; border: 1px solid #ffcdd2; color: #d32f2f; padding: 0.5rem 1rem; border-radius: 12px; display: inline-block; max-width: 70%;">
+                            Sorry, I couldn't process your request. Please try again.
+                        </div>
+                    </div>
+                `;
+            }
+            
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        
+        async function loadUserLeaderboard(content) {
+            try {
+                const response = await fetch(`${BASE_URL}/leaderboard/users`);
+                if (!response.ok) throw new Error('Failed to fetch leaderboard');
+                
+                const data = await response.json();
+                
+                let html = `
+                    <h3>User Leaderboard</h3>
+                    <p>Activity ranking across all quantum users</p>
+                    
+                    <table class="data-table" style="margin-top: 2rem;">
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>User</th>
+                                <th>Total Jobs</th>
+                                <th>Completed</th>
+                                <th>Success Rate</th>
+                                <th>Quantum Time (s)</th>
+                                <th>Score</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+                
+                data.leaderboard.forEach(user => {
+                    const successRateClass = user.success_rate >= 80 ? 'status-done' : 
+                                           user.success_rate >= 60 ? 'status-running' : 'status-error';
+                    
+                    html += `
+                        <tr>
+                            <td><strong>${user.rank}</strong></td>
+                            <td>${user.user_name}</td>
+                            <td>${user.total_jobs}</td>
+                            <td>${user.completed_jobs}</td>
+                            <td><span class="status-badge ${successRateClass}">${user.success_rate}%</span></td>
+                            <td>${user.quantum_seconds_used}</td>
+                            <td>${user.activity_score}</td>
+                        </tr>
+                    `;
+                });
+                
+                html += `</tbody></table>
+                    <canvas id="leaderboardChart" style="margin-top:2rem; max-height:400px;"></canvas>
+                `;
+                
+                content.innerHTML = html;
+        
+                // Build chart
+                const ctx = document.getElementById('leaderboardChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: data.leaderboard.map(u => u.user_name),
+                        datasets: [{
+                            label: 'Activity Score',
+                            data: data.leaderboard.map(u => u.activity_score),
+                            backgroundColor: 'rgba(37, 94, 193, 0.6)'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: { display: false },
+                            title: { display: true, text: 'Leaderboard Activity Scores' }
+                        }
+                    }
+                });
+                
+            } catch (error) {
+                content.innerHTML = `<div class="error-message">No backend data fetched</div>`;
+            }
+        }
+
+
+        async function loadFailureDoctor(content) {
+            if (currentUserType === 'researcher') {
+                content.innerHTML = `<div class="error-message">Failure Doctor not available in researcher mode</div>`;
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${BASE_URL}/doctor/diagnose/${currentUser}`);
+                if (!response.ok) throw new Error('Failed to fetch diagnosis');
+                
+                const data = await response.json();
+                const diagnosis = data.diagnosis;
+                
+                let html = `
+                    <h3>Quantum Failure Doctor</h3>
+                    <p>Diagnosis and recommendations for ${currentUser}</p>
+                    
+                    <div class="info-grid" style="margin: 2rem 0;">
+                        <div class="info-card">
+                            <div class="info-card-value" style="color: ${data.health_score >= 80 ? '#2e7d32' : data.health_score >= 60 ? '#f57c00' : '#d32f2f'}">
+                                ${data.health_score}
+                            </div>
+                            <div class="info-card-label">Health Score</div>
+                        </div>
+                        <div class="info-card">
+                            <div class="info-card-value">${diagnosis.total_failures}</div>
+                            <div class="info-card-label">Total Failures</div>
+                        </div>
+                    </div>
+                    
+                    <h4>Failure Categories</h4>
+                    <div style="background: white; padding: 1.5rem; border-radius: 12px; margin: 1rem 0;">
+                `;
+                
+                for (const [category, count] of Object.entries(diagnosis.failure_categories)) {
+                    if (count > 0) {
+                        html += `<p><strong>${category.replace('_', ' ').toUpperCase()}:</strong> ${count} failures</p>`;
+                    }
+                }
+                
+                html += `
+                    </div>
+                    
+                    <h4>Recommendations</h4>
+                    <div style="margin: 1rem 0;">
+                `;
+                
+                diagnosis.recommendations.forEach(rec => {
+                    const priorityClass = rec.priority === 'high' ? 'status-error' : 
+                                         rec.priority === 'medium' ? 'status-running' : 'status-done';
+                    
+                    html += `
+                        <div class="info-card" style="text-align: left; margin-bottom: 1rem;">
+                            <div class="status-badge ${priorityClass}">${rec.priority.toUpperCase()} PRIORITY</div>
+                            <h5 style="margin: 0.5rem 0;">${rec.issue}</h5>
+                            <p>${rec.suggestion}</p>
+                        </div>
+                    `;
+                });
+                
+                html += '</div>';
+                content.innerHTML = html;
+                
+            } catch (error) {
+                content.innerHTML = `<div class="error-message">IBM Quantum service errors</div>`;
+            }
+        }
+
+        async function loadJobsTracker(content) {
+            if (currentUserType === 'researcher') {
+                content.innerHTML = `<div class="error-message">Individual job tracking not available in researcher mode</div>`;
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${BASE_URL}/jobs/${currentUser}?limit=20`);
+                if (!response.ok) throw new Error('Failed to fetch jobs');
+                
+                const data = await response.json();
+                
+                let html = `
+                    <h3>Jobs Tracker</h3>
+                    <p>Recent quantum jobs for ${currentUser}</p>
+                    
+                    <table class="data-table" style="margin-top: 2rem;">
+                        <thead>
+                            <tr>
+                                <th>Job ID</th>
+                                <th>Status</th>
+                                <th>Backend</th>
+                                <th>Created</th>
+                                <th>Quantum Time</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+                
+                data.jobs.forEach(job => {
+                    const statusClass = job.status === 'DONE' ? 'status-done' : 
+                                       job.status === 'RUNNING' ? 'status-running' :
+                                       job.status === 'ERROR' || job.status === 'CANCELLED' ? 'status-error' : 'status-queued';
+                    
+                    const quantumTime = job.usage?.quantum_seconds ? `${job.usage.quantum_seconds}s` : 'N/A';
+                    const createdDate = job.creation_date ? new Date(job.creation_date).toLocaleDateString() : 'Unknown';
+                    
+                    html += `
+                        <tr>
+                            <td><code>${job.job_id}</code></td>
+                            <td><span class="status-badge ${statusClass}">${job.status}</span></td>
+                            <td>${job.backend}</td>
+                            <td>${createdDate}</td>
+                            <td>${quantumTime}</td>
+                        </tr>
+                    `;
+                });
+                
+                html += '</tbody></table>';
+                content.innerHTML = html;
+                
+            } catch (error) {
+                content.innerHTML = `<div class="error-message">No backend data fetched</div>`;
+            }
+        }
+
+        async function loadResourceMeter(content) {
+            if (currentUserType === 'researcher') {
+                content.innerHTML = `<div class="error-message">Resource meter not available in researcher mode</div>`;
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${BASE_URL}/analytics/resources/${currentUser}`);
+                if (!response.ok) throw new Error('Failed to fetch resource data');
+                
+                const data = await response.json();
+                const analysis = data.resource_analysis;
+                
+                let html = `
+                    <h3>Quantum Resource Meter</h3>
+                    <p>Resource usage analysis for ${currentUser}</p>
+                    
+                    <div class="info-grid" style="margin: 2rem 0;">
+                        <div class="info-card">
+                            <div class="info-card-value">${analysis.total_quantum_seconds.toFixed(2)}</div>
+                            <div class="info-card-label">Total Quantum Seconds</div>
+                        </div>
+                        <div class="info-card">
+                            <div class="info-card-value">${analysis.total_execution_time.toFixed(2)}</div>
+                            <div class="info-card-label">Total Execution Time</div>
+                        </div>
+                        <div class="info-card">
+                            <div class="info-card-value">${analysis.jobs_analyzed}</div>
+                            <div class="info-card-label">Jobs Analyzed</div>
+                        </div>
+                        <div class="info-card">
+                            <div class="info-card-value">${analysis.average_resources.quantum_seconds.toFixed(2)}</div>
+                            <div class="info-card-label">Avg Quantum Seconds</div>
+                        </div>
+                    </div>
+                    
+                    <h4>Resource Distribution</h4>
+                    <table class="data-table" style="margin-top: 1rem;">
+                        <thead>
+                            <tr>
+                                <th>Job ID</th>
+                                <th>Backend</th>
+                                <th>Quantum Seconds</th>
+                                <th>Execution Seconds</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+                
+                analysis.resource_distribution.slice(0, 10).forEach(job => {
+                    const statusClass = job.status === 'DONE' ? 'status-done' : 
+                                       job.status === 'RUNNING' ? 'status-running' : 
+                                       job.status === 'ERROR' ? 'status-error' : 'status-queued';
+                    
+                    html += `
+                        <tr>
+                            <td><code>${job.job_id}</code></td>
+                            <td>${job.backend}</td>
+                            <td>${job.quantum_seconds.toFixed(3)}</td>
+                            <td>${job.execution_seconds.toFixed(2)}</td>
+                            <td><span class="status-badge ${statusClass}">${job.status}</span></td>
+                        </tr>
+                    `;
+                });
+                
+                html += '</tbody></table>';
+                content.innerHTML = html;
+                
+            } catch (error) {
+                content.innerHTML = `<div class="error-message">IBM Quantum service errors</div>`;
+            }
+        }
+
+        
+        
+        
+        async function loadBackendComparator(content) {
+            try {
+                const response = await fetch(`${BASE_URL}/compare/backends`);
+                if (!response.ok) throw new Error('Failed to fetch comparison data');
+                
+                const data = await response.json();
+                
+                let html = `
+                    <h3>Backend Comparator</h3>
+                    <p>Compare quantum backend performance and availability</p>
+                    
+                    <table class="data-table" style="margin-top: 2rem;">
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>Backend</th>
+                                <th>Status</th>
+                                <th>Queue</th>
+                                <th>Error Rate</th>
+                                <th>Uptime</th>
+                                <th>Score</th>
+                                <th>Recommendation</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+                
+                data.backend_comparison.forEach(backend => {
+                    const statusClass = backend.operational ? 'status-done' : 'status-error';
+                    const scoreClass = backend.recommendation_score >= 80 ? 'status-done' : 
+                                      backend.recommendation_score >= 60 ? 'status-running' : 'status-error';
+                    
+                    html += `
+                        <tr>
+                            <td><strong>${backend.rank}</strong></td>
+                            <td>${backend.name}</td>
+                            <td><span class="status-badge ${statusClass}">${backend.operational ? 'UP' : 'DOWN'}</span></td>
+                            <td>${backend.pending_jobs}</td>
+                            <td>${backend.error_rate_percent}%</td>
+                            <td>${backend.uptime_percent}%</td>
+                            <td><span class="status-badge ${scoreClass}">${backend.recommendation_score}</span></td>
+                            <td>${backend.recommendation}</td>
+                        </tr>
+                    `;
+                });
+                
+                html += `</tbody></table>
+                    <canvas id="backendChartScore" style="margin-top:2rem; max-height:400px;"></canvas>
+                    <canvas id="backendChartError" style="margin-top:2rem; max-height:400px;"></canvas>
+                `;
+                
+                content.innerHTML = html;
+        
+                // Chart.js bar chart for recommendation scores
+                const ctx1 = document.getElementById('backendChartScore').getContext('2d');
+                new Chart(ctx1, {
+                    type: 'bar',
+                    data: {
+                        labels: data.backend_comparison.map(b => b.name),
+                        datasets: [{
+                            label: 'Recommendation Score',
+                            data: data.backend_comparison.map(b => b.recommendation_score),
+                            backgroundColor: 'rgba(168, 157, 185, 0.6)'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: { display: false },
+                            title: { display: true, text: 'Backend Recommendation Scores' }
+                        }
+                    }
+                });
+
+                // Chart.js line chart for error rates
+                const ctx2 = document.getElementById('backendChartError').getContext('2d');
+                new Chart(ctx2, {
+                    type: 'line',
+                    data: {
+                        labels: data.backend_comparison.map(b => b.name),
+                        datasets: [{
+                            label: 'Error Rate (%)',
+                            data: data.backend_comparison.map(b => b.error_rate_percent),
+                            fill: false,
+                            borderColor: 'rgba(255, 99, 132, 1)',
+                            tension: 0.2,
+                            pointBackgroundColor: 'rgba(255, 99, 132, 1)',
+                            pointRadius: 5
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: { display: true },
+                            title: { display: true, text: 'Backend Error Rates (%)' }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                max: 100
+                            }
+                        }
+                    }
+                });
+                
+            } catch (error) {
+                content.innerHTML = `<div class="error-message">No backend data fetched</div>`;
+            }
+        }
+
+
+
+
+        
+        
+        async function loadTrendsAnalyzer(content) {
+            if (currentUserType === 'researcher') {
+                content.innerHTML = `<div class="error-message">Individual trends not available in researcher mode</div>`;
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${BASE_URL}/analytics/trends/${currentUser}?days=30`);
+                if (!response.ok) throw new Error('Failed to fetch trends data');
+                
+                const data = await response.json();
+                const trends = data.trends_analysis;
+                
+                let html = `
+                    <h3>Trends Analyzer</h3>
+                    <p>30-day job trends for ${currentUser}</p>
+                    
+                    <div class="info-grid" style="margin: 2rem 0;">
+                `;
+                
+                if (trends.peak_usage_day && Array.isArray(trends.peak_usage_day)) {
+                    html += `
+                        <div class="info-card">
+                            <div class="info-card-value">${trends.peak_usage_day[1]}</div>
+                            <div class="info-card-label">Peak Day Jobs (${trends.peak_usage_day[0]})</div>
+                        </div>
+                    `;
+                }
+                
+                if (trends.most_used_backend && Array.isArray(trends.most_used_backend)) {
+                    html += `
+                        <div class="info-card">
+                            <div class="info-card-value">${trends.most_used_backend[1]}</div>
+                            <div class="info-card-label">Most Used Backend: ${trends.most_used_backend[0]}</div>
+                        </div>
+                    `;
+                }
+                
+                html += `</div>
+                    <h4>Daily Job Counts</h4>
+                    <canvas id="trendsChart" style="margin-top:2rem; max-height:400px;"></canvas>
+                `;
+                
+                content.innerHTML = html;
+                
+                // Prepare data for line chart
+                const dailyCounts = Object.entries(trends.daily_job_counts);
+                if (dailyCounts.length > 0) {
+                    const labels = dailyCounts.map(([date, _]) => new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+                    const values = dailyCounts.map(([_, count]) => count);
+                    
+                    const ctx = document.getElementById('trendsChart').getContext('2d');
+                    new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: 'Jobs per Day',
+                                data: values,
+                                fill: false,
+                                borderColor: 'rgba(37, 94, 193, 1)',
+                                tension: 0.2,
+                                pointBackgroundColor: 'rgba(37, 94, 193, 1)',
+                                pointRadius: 4
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                legend: { display: true },
+                                title: { 
+                                    display: true, 
+                                    text: `Daily Job Counts (Most Used Backend: ${trends.most_used_backend ? trends.most_used_backend[0] : 'N/A'})`
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    title: { display: true, text: 'Days' }
+                                },
+                                y: {
+                                    beginAtZero: true,
+                                    title: { display: true, text: 'Jobs' }
+                                }
+                            }
+                        }
+                    });
+                } else {
+                    document.getElementById('trendsChart').outerHTML = '<p>No job data available for the selected period.</p>';
+                }
+                
+            } catch (error) {
+                content.innerHTML = `<div class="error-message">IBM Quantum service errors</div>`;
+            }
+        }
+
+
+
+        async function loadTimePredictor(content) {
+            if (currentUserType === 'researcher') {
+                content.innerHTML = `<div class="error-message">Time prediction not available in researcher mode</div>`;
+                return;
+            }
+            
+            content.innerHTML = `
+                <h3>Time Predictor</h3>
+                <p>Predict completion time for jobs</p>
+                
+                <div style="background: white; border-radius: 12px; padding: 1.5rem; margin: 1rem 0;">
+                    <div class="form-group">
+                        <label class="form-label">Enter Job ID</label>
+                        <input type="text" id="job-id-input" class="form-input" placeholder="Enter job ID to predict completion time">
+                    </div>
+                    <button onclick="predictJobTime()" class="connect-btn" style="width: auto; padding: 0.75rem 1.5rem;">
+                        Predict Time
+                    </button>
+                </div>
+                
+                <div id="prediction-result" style="margin-top: 2rem;"></div>
+            `;
+        }
+
+        async function predictJobTime() {
+            const jobId = document.getElementById('job-id-input').value.trim();
+            const resultDiv = document.getElementById('prediction-result');
+            
+            if (!jobId) {
+                resultDiv.innerHTML = '<div class="error-message">Please enter a job ID</div>';
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${BASE_URL}/predict/time/${currentUser}/${jobId}`);
+                if (!response.ok) throw new Error('Failed to predict job time');
+                
+                const data = await response.json();
+                
+                resultDiv.innerHTML = `
+                    <div class="info-card" style="text-align: left;">
+                        <h4>Prediction for Job ${data.job_id}</h4>
+                        <p><strong>Backend:</strong> ${data.backend}</p>
+                        <p><strong>Status:</strong> <span class="status-badge status-${data.status.toLowerCase()}">${data.status}</span></p>
+                        <p><strong>Predicted Start:</strong> ${data.predicted_start !== 'Unknown' ? new Date(data.predicted_start).toLocaleString() : 'Unknown'}</p>
+                        <p><strong>Predicted End:</strong> ${data.predicted_end !== 'Unknown' ? new Date(data.predicted_end).toLocaleString() : 'Unknown'}</p>
+                        <p><strong>Average Execution:</strong> ${data.average_execution_seconds} seconds</p>
+                    </div>
+                `;
+                
+            } catch (error) {
+                resultDiv.innerHTML = '<div class="error-message">Failed to predict job time. Please check the job ID.</div>';
+            }
+        }
+
+        function backToDashboard() {
+            document.getElementById('feature-page').classList.remove('active');
+            document.getElementById('dashboard-page').classList.add('active');
+        }
+
+        function backToLogin() {
+            // Clear intervals and connections
+            if (refreshInterval) clearInterval(refreshInterval);
+            if (websocket) websocket.close();
+            
+            // Clear session
+            clearSession();
+            
+            // Reset state
+            currentUser = '';
+            isConnected = false;
+            
+            // Navigate back to login
+            document.getElementById('dashboard-page').classList.remove('active');
+            document.getElementById('feature-page').classList.remove('active');
+            document.getElementById('home-page').classList.add('active');
+            
+            // Reset form
+            document.getElementById('user-select').value = '';
+            hideError();
+            
+            // Reset user type selection
+            currentUserType = 'user';
+            document.querySelectorAll('.user-type-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector('.user-type-btn').classList.add('active');
+            
+            document.querySelectorAll('.form-section').forEach(section => {
+                section.classList.remove('active');
+            });
+            document.getElementById('user-form').classList.add('active');
+            
+            // Reset dashboard values
+            document.getElementById('jobs-completed').textContent = '0';
+            document.getElementById('jobs-running').textContent = '0';
+            document.getElementById('jobs-queued').textContent = '0';
+            document.getElementById('connection-status').innerHTML = '<span style="color: #223047;">●</span> Disconnected';
+            
+            // Hide researcher cards
+            document.querySelectorAll('.researcher-only').forEach(card => {
+                card.classList.remove('show');
+            });
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('error-message');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+
+        function hideError() {
+            const errorDiv = document.getElementById('error-message');
+            errorDiv.style.display = 'none';
+        }
+
+        // Initialize app when page loads
+        window.addEventListener('load', function() {
+            // Try to restore session
+            if (!loadSession()) {
+                // Stay on login page
+                console.log('No saved session found');
+            }
+        });
+    
+function hideResearcherFeatures() {
+    if (currentUserType === 'researcher') {
+        const featuresToHide = [
+            'time-predictor',
+            'smart-notifications',
+            'failure-doctor',
+            'trends-analyzer',
+            'jobs-tracker',
+            'resource-meter'
+        ];
+        featuresToHide.forEach(f => {
+            const card = document.querySelector(`[onclick="openFeature('${f}')"]`);
+            if (card) card.style.display = "none";
+        });
+    }
+}
+
+</script>
+</body>
+</html>

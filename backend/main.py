@@ -11,7 +11,7 @@ from collections import defaultdict, Counter
 
 app = FastAPI(title="Quantum Job Tracker Backend", version="2.0")
 
-# Add CORS middleware for frontend connection
+
 app.add_middleware(
     CORSMiddleware,
         allow_origins=["*"],
@@ -19,10 +19,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# ---------------------------
-# 1. Initialize IBM Quantum Service
-# ---------------------------
 
 USERS = [
     {
@@ -62,12 +58,10 @@ USERS = [
     },
 ]
 
-# ---------------------------
-# Helper Functions
-# ---------------------------
+
 
 def get_service(user: Dict) -> QiskitRuntimeService:
-    """Initialize Qiskit Runtime Service for a user"""
+   
     return QiskitRuntimeService(
         channel="ibm_cloud",
         token=user["api_key"],
@@ -75,7 +69,7 @@ def get_service(user: Dict) -> QiskitRuntimeService:
     )
 
 def safe_get_attr(obj, attr, default="Unknown"):
-    """Safely get attribute from object"""
+
     try:
         value = getattr(obj, attr, None)
         if callable(value):
@@ -85,7 +79,7 @@ def safe_get_attr(obj, attr, default="Unknown"):
         return default
 
 def extract_job_data(job) -> Dict:
-    """Extract comprehensive job data INCLUDING quantum results, circuit type, and backend calibration"""
+
     try:
         # Basic job info
         job_id = safe_get_attr(job, "job_id")
@@ -97,7 +91,7 @@ def extract_job_data(job) -> Dict:
         except:
             status_name = "Unknown"
 
-        # Backend
+ 
         backend_name = "Unknown"
         backend_props = {}
         try:
@@ -120,12 +114,12 @@ def extract_job_data(job) -> Dict:
         except:
             backend_name = "Unknown"
 
-        # Creation date
+
         creation_date = safe_get_attr(job, "creation_date")
         if creation_date and hasattr(creation_date, 'isoformat'):
             creation_date = creation_date.isoformat()
 
-        # Program ID / Circuit type
+       
         program_id = safe_get_attr(job, "program_id")
         circuit_type = "Unknown"
         try:
@@ -142,13 +136,12 @@ def extract_job_data(job) -> Dict:
         except:
             pass
 
-        # Tags
         try:
             tags = job.tags or []
         except:
             tags = []
 
-        # Usage and metrics
+        
         try:
             usage = job.usage()
             usage_data = {
@@ -165,7 +158,7 @@ def extract_job_data(job) -> Dict:
         except:
             metrics_data = {}
 
-        # Queue info
+        
         try:
             queue_info = job.queue_info()
             queue_data = {
@@ -175,10 +168,9 @@ def extract_job_data(job) -> Dict:
         except:
             queue_data = {}
 
-        # Error message
         error_message = safe_get_attr(job, "error_message", None)
 
-        # Quantum results
+ 
         quantum_results = None
         try:
             if status_name == 'DONE':
@@ -230,16 +222,12 @@ def extract_job_data(job) -> Dict:
             "quantum_results": None
         }
 
-# ---------------------------
-# 2. Health Check
-# ---------------------------
+
 @app.get("/")
 def home():
     return {"message": "Quantum Job Tracker Backend is Running 🚀", "version": "2.0"}
 
-# ---------------------------
-# NEW FEATURE: Authentication
-# ---------------------------
+
 @app.post("/auth/login")
 def login_user(credentials: dict):
     """Authenticate user with API key and instance - Frontend Login"""
@@ -277,9 +265,7 @@ def login_user(credentials: dict):
         raise HTTPException(status_code=401, detail=f"Authentication failed: {str(e)}")
 
 
-# ---------------------------
-# NEW ENDPOINT: All Users Job Tracker
-# ---------------------------
+
 @app.get("/jobs/all")
 def get_all_jobs(limit: int = Query(default=20, le=100)):
     """Fetch jobs from ALL users (Researcher Mode)"""
@@ -299,9 +285,6 @@ def get_all_jobs(limit: int = Query(default=20, le=100)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# ---------------------------
-# 3. Feature 1: Job Tracker
-# ---------------------------
 @app.get("/jobs/{user_name}")
 def get_jobs(user_name: str, limit: int = Query(default=10, le=100)):
     """Get jobs for a specific user - Feature 1: Job Tracker"""
@@ -346,7 +329,7 @@ def get_job_details(user_name: str, job_id: str):
 
 @app.get("/jobs/find/{job_id}")
 def find_job_by_id(job_id: str):
-    """Find job details across all users (Researcher Mode)"""
+   
     for user in USERS:
         try:
             service = get_service(user)   # connect with each user
@@ -359,14 +342,12 @@ def find_job_by_id(job_id: str):
                     "details": job_data
                 }
         except Exception as e:
-            # Just skip to next user
+         
             continue
 
-    # If no user has this job
+    
     raise HTTPException(status_code=404, detail=f"Job {job_id} not found for any user")
-# ---------------------------
-# NEW FEATURE: Backend Heatmap
-# ---------------------------
+
 @app.get("/heatmap/backends")
 def get_backend_heatmap():
     """Get backend status for heatmap - Frontend Feature 2"""
@@ -382,7 +363,6 @@ def get_backend_heatmap():
                 pending = getattr(status, 'pending_jobs', 0)
                 operational = getattr(status, 'operational', False)
                 
-                # Determine color based on load
                 if not operational:
                     color = "red"
                     load_status = "down"
@@ -417,9 +397,7 @@ def get_backend_heatmap():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# ---------------------------
-# NEW FEATURE: Real-time Notifications
-# ---------------------------
+
 @app.get("/notifications/{user_name}")
 def get_job_notifications(user_name: str):
     """Get real-time job notifications - Frontend Feature 3"""
@@ -480,9 +458,7 @@ def get_job_notifications(user_name: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# ---------------------------
-# NEW FEATURE: Chatbot
-# ---------------------------
+
 @app.post("/chatbot/query")
 def chatbot_query(query_data: dict):
     """Chatbot assistance - Frontend Feature 4"""
@@ -497,7 +473,7 @@ def chatbot_query(query_data: dict):
         "5 qubit": "For 5-qubit circuits, I recommend ibmq_quito or ibmq_manila. They have good connectivity and low error rates."
     }
     
-    # Find matching response
+  
     response = "I can help you with backend recommendations, job status, and quantum computing questions. Try asking about 'best backend' or 'job failed'."
     
     for key, value in responses.items():
@@ -512,9 +488,6 @@ def chatbot_query(query_data: dict):
         "confidence": 0.85
     }
 
-# ---------------------------
-# NEW FEATURE: Enhanced Leaderboard
-# ---------------------------
 @app.get("/leaderboard/users")
 def get_user_leaderboard():
     """User activity leaderboard - Frontend Feature 5"""
@@ -569,10 +542,9 @@ def get_user_leaderboard():
                     "status": "error"
                 })
         
-        # Sort by activity score
         leaderboard_data.sort(key=lambda x: x["activity_score"], reverse=True)
         
-        # Assign ranks
+  
         for i, user_data in enumerate(leaderboard_data):
             user_data["rank"] = i + 1
         
@@ -585,9 +557,7 @@ def get_user_leaderboard():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# ---------------------------
-# NEW FEATURE: Failure Doctor
-# ---------------------------
+
 @app.get("/doctor/diagnose/{user_name}")
 def quantum_failure_doctor(user_name: str):
     """Diagnose job failures and suggest fixes - Frontend Feature 6"""
@@ -621,7 +591,7 @@ def quantum_failure_doctor(user_name: str):
                 diagnosis["total_failures"] += 1
                 failed_backends[job_data["backend"]] += 1
                 
-                # Simple error categorization
+          
                 error_msg = job_data.get("error_message", "").lower()
                 if "depth" in error_msg or "circuit" in error_msg:
                     diagnosis["failure_categories"]["circuit_depth"] += 1
@@ -634,7 +604,7 @@ def quantum_failure_doctor(user_name: str):
                 else:
                     diagnosis["failure_categories"]["backend_issues"] += 1
         
-        # Generate recommendations
+   
         if diagnosis["failure_categories"]["circuit_depth"] > 0:
             diagnosis["recommendations"].append({
                 "issue": "Circuit Depth Problems",
@@ -665,9 +635,7 @@ def quantum_failure_doctor(user_name: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# ---------------------------
-# 4. Feature 2: Job Status Analyzer
-# ---------------------------
+
 @app.get("/analytics/job-status/{user_name}")
 def analyze_job_status(user_name: str, days: int = Query(default=30, le=365)):
     """Analyze job status distribution - Feature 2: Job Status Analyzer"""
@@ -732,7 +700,7 @@ def analyze_quantum_resources(user_name: str):
                 })
                 backend_comparison[job_data["backend"]].append(job_data["quantum_results"].get("fidelity_percent", 0))
 
-        # Average fidelity per backend
+       
         backend_avg = {b: sum(vals)/len(vals) for b, vals in backend_comparison.items() if vals}
 
         return {
@@ -748,9 +716,6 @@ def analyze_quantum_resources(user_name: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# ---------------------------
-# NEW ENDPOINT: All Users Resource Meter
-# ---------------------------
 @app.get("/analytics/resources/all")
 def analyze_all_resources():
     """Aggregate quantum resource usage across ALL users"""
@@ -789,9 +754,6 @@ def analyze_all_resources():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# ---------------------------
-# 6. Feature 4: Quantum Resource Meter
-# ---------------------------
 @app.get("/analytics/resources/{user_name}")
 def analyze_quantum_resources(user_name: str):
     """Analyze quantum resource usage - Feature 4: Quantum Resource Meter"""
@@ -839,7 +801,7 @@ def analyze_quantum_resources(user_name: str):
                     "status": job_data["status"]
                 })
         
-        # Calculate averages
+   
         if resource_analysis["jobs_analyzed"] > 0:
             resource_analysis["average_resources"]["quantum_seconds"] = resource_analysis["total_quantum_seconds"] / resource_analysis["jobs_analyzed"]
             resource_analysis["average_resources"]["execution_seconds"] = resource_analysis["total_execution_time"] / resource_analysis["jobs_analyzed"]
@@ -852,9 +814,7 @@ def analyze_quantum_resources(user_name: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# ---------------------------
-# NEW FEATURE: Detailed Metrics
-# ---------------------------
+
 @app.get("/metrics/detailed/{user_name}")
 def get_detailed_metrics(user_name: str):
     """Get detailed resource metrics for dashboard - Frontend Feature 9"""
@@ -940,9 +900,6 @@ def get_detailed_metrics(user_name: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# ---------------------------
-# 7. Feature 5: Backend Performance Analyzer
-# ---------------------------
 @app.get("/analytics/backend-performance")
 def analyze_backend_performance():
     """Analyze backend performance across all users - Feature 5: Backend Performance Analyzer"""
@@ -998,9 +955,7 @@ def analyze_backend_performance():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# ---------------------------
-# 8. Feature 6: Historical Job Trends
-# ---------------------------
+
 @app.get("/analytics/trends/{user_name}")
 def analyze_job_trends(user_name: str, days: int = Query(default=90, le=365)):
     """Analyze historical job trends - Feature 6: Historical Job Trends"""
@@ -1026,8 +981,7 @@ def analyze_job_trends(user_name: str, days: int = Query(default=90, le=365)):
         
         for job in jobs:
             job_data = extract_job_data(job)
-            
-            # Parse date
+         
             if job_data["creation_date"] and job_data["creation_date"] != "Unknown":
                 try:
                     job_date = datetime.fromisoformat(job_data["creation_date"].replace('Z', '+00:00'))
@@ -1041,16 +995,15 @@ def analyze_job_trends(user_name: str, days: int = Query(default=90, le=365)):
                 except:
                     pass
         
-        # Convert defaultdicts to regular dicts
+      
         trends_analysis["daily_job_counts"] = dict(trends_analysis["daily_job_counts"])
         trends_analysis["backend_usage_over_time"] = {k: dict(v) for k, v in trends_analysis["backend_usage_over_time"].items()}
         trends_analysis["status_trends"] = {k: dict(v) for k, v in trends_analysis["status_trends"].items()}
-        
-        # Find peak usage day
+
         if trends_analysis["daily_job_counts"]:
             trends_analysis["peak_usage_day"] = max(trends_analysis["daily_job_counts"].items(), key=lambda x: x[1])
         
-        # Most used backend
+        
         if backend_totals:
             trends_analysis["most_used_backend"] = backend_totals.most_common(1)[0]
         
@@ -1062,9 +1015,7 @@ def analyze_job_trends(user_name: str, days: int = Query(default=90, le=365)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# ---------------------------
-# 9. Feature 7: User Job Analyzer (Researcher Mode)
-# ---------------------------
+
 @app.get("/analytics/all-users")
 def analyze_all_users():
     """Analyze job activity across all users - Feature 7: User Job Analyzer"""
@@ -1121,7 +1072,6 @@ def analyze_all_users():
                     "error": str(user_error)
                 }
         
-        # Calculate summary
         all_users_analysis["summary"]["total_jobs_all_users"] = total_jobs
         all_users_analysis["summary"]["average_jobs_per_user"] = total_jobs / len(USERS) if len(USERS) > 0 else 0
         
@@ -1140,9 +1090,7 @@ def analyze_all_users():
 
 
 
-# ---------------------------
-# NEW ENDPOINT: All Users Job Status / Time Predictor
-# ---------------------------
+
 @app.get("/analytics/job-status/all")
 def analyze_all_job_status(days: int = Query(default=30, le=365)):
     """Aggregate job status across ALL users for time prediction"""
@@ -1179,9 +1127,7 @@ def analyze_all_job_status(days: int = Query(default=30, le=365)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
  
-# ---------------------------
-# 10. Feature 8: Backend Usage Monitor
-# ---------------------------
+
 @app.get("/analytics/backend-usage/{user_name}")
 def monitor_backend_usage(user_name: str):
     """Monitor backend usage patterns - Feature 8: Backend Usage Monitor"""
@@ -1227,8 +1173,7 @@ def monitor_backend_usage(user_name: str):
             
             if job_data["usage"].get("seconds"):
                 execution_times_by_backend[backend].append(job_data["usage"]["seconds"])
-        
-        # Calculate averages and success rates
+       
         for backend, stats in backend_monitor["backend_usage_stats"].items():
             if stats["job_count"] > 0:
                 stats["success_rate"] = (stats["success_count"] / stats["job_count"]) * 100
@@ -1236,7 +1181,7 @@ def monitor_backend_usage(user_name: str):
                 if execution_times_by_backend[backend]:
                     stats["avg_execution_time"] = sum(execution_times_by_backend[backend]) / len(execution_times_by_backend[backend])
         
-        # Summary statistics
+      
         backend_monitor["usage_summary"]["total_backends_used"] = len(backend_monitor["backend_usage_stats"])
         
         if backend_job_counts:
@@ -1252,7 +1197,7 @@ def monitor_backend_usage(user_name: str):
                 "job_count": least_used[1]
             }
         
-        # Convert defaultdict to regular dict
+       
         backend_monitor["backend_usage_stats"] = dict(backend_monitor["backend_usage_stats"])
         
         return {
@@ -1263,9 +1208,7 @@ def monitor_backend_usage(user_name: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# ---------------------------
-# 11. Feature 9: Job Failure Insights
-# ---------------------------
+
 @app.get("/analytics/failures/{user_name}")
 def analyze_job_failures(user_name: str):
     """Analyze job failure patterns - Feature 9: Job Failure Insights"""
@@ -1320,7 +1263,7 @@ def analyze_job_failures(user_name: str):
                     except:
                         pass
         
-        # Generate insights
+       
         if failure_analysis["failure_patterns"]["by_backend"]:
             most_unreliable = max(failure_analysis["failure_patterns"]["by_backend"].items(), key=lambda x: x[1])
             failure_analysis["failure_insights"]["most_unreliable_backend"] = {
@@ -1350,9 +1293,7 @@ def analyze_job_failures(user_name: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# ---------------------------
-# 12. Feature 10: Smart Scheduler Recommendation
-# ---------------------------
+
 @app.get("/recommendations/smart-scheduler")
 def smart_scheduler_recommendation():
     """Get smart backend recommendations - Feature 10: Smart Scheduler Recommendation"""
@@ -1417,13 +1358,12 @@ def smart_scheduler_recommendation():
             except Exception as backend_error:
                 continue
         
-        # Sort by recommendation score (highest first)
+       
         backend_scores.sort(key=lambda x: x["recommendation_score"], reverse=True)
         
         recommendations["recommended_backends"] = backend_scores[:5]  # Top 5 recommendations
         recommendations["total_backends_analyzed"] = len(backend_scores)
         
-        # Best recommendation
         if backend_scores:
             recommendations["best_choice"] = backend_scores[0]
         
@@ -1432,9 +1372,7 @@ def smart_scheduler_recommendation():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# ---------------------------
-# NEW FEATURE: Enhanced Backend Comparator
-# ---------------------------
+
 @app.get("/compare/backends")
 def compare_backends_enhanced():
     """Enhanced backend comparison - Frontend Feature 10"""
@@ -1449,7 +1387,7 @@ def compare_backends_enhanced():
                 backend_name = backend.name
                 status = backend.status()
                 
-                # Mock additional data (in real implementation, calculate from historical data)
+                
                 uptime_percentage = random.uniform(85, 99)
                 avg_queue_time = random.randint(5, 45)
                 error_rate = random.uniform(0.01, 0.15)
@@ -1464,7 +1402,7 @@ def compare_backends_enhanced():
                     "recommendation_score": 0
                 }
                 
-                # Calculate recommendation score
+                
                 score = 0
                 if backend_info["operational"]:
                     score += 40
@@ -1473,7 +1411,7 @@ def compare_backends_enhanced():
                 
                 backend_info["recommendation_score"] = round(score, 1)
                 
-                # Determine recommendation level
+               
                 if score >= 80:
                     backend_info["recommendation"] = "Highly Recommended"
                 elif score >= 60:
@@ -1488,10 +1426,10 @@ def compare_backends_enhanced():
             except Exception:
                 continue
         
-        # Sort by recommendation score
+        
         comparison_data.sort(key=lambda x: x["recommendation_score"], reverse=True)
         
-        # Add rankings
+     
         for i, backend in enumerate(comparison_data):
             backend["rank"] = i + 1
         
@@ -1504,10 +1442,7 @@ def compare_backends_enhanced():
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-# ---------------------------
-# NEW FEATURE: Time Predictor with Fallback
-# ---------------------------
-# FIXED TIME PREDICTION ENDPOINT
+
 @app.get("/predict/time/{user_name}/{job_id}")
 def predict_job_completion_fixed(user_name: str, job_id: str):
     """IMPROVED: Predict when a job will likely complete - with better logic for RUNNING/QUEUED jobs"""
@@ -1527,12 +1462,10 @@ def predict_job_completion_fixed(user_name: str, job_id: str):
         except:
             queue_position = None
             estimated_start = None
-
-        # Get current status
+      
         current_status = job.status()
         status_name = getattr(current_status, 'name', str(current_status))
-
-        # Get backend info for queue estimation
+        
         backend = job.backend()
         backend_name = getattr(backend, 'name', 'Unknown')
         
@@ -1542,9 +1475,7 @@ def predict_job_completion_fixed(user_name: str, job_id: str):
         except:
             pending_jobs = 0
 
-        # ========================================
-        # IMPROVED: Get historical execution times
-        # ========================================
+        
         def get_average_execution_time():
             """Get average execution time from historical completed jobs"""
             try:
@@ -1567,9 +1498,7 @@ def predict_job_completion_fixed(user_name: str, job_id: str):
             except:
                 return 60  # Fallback
 
-        # ========================================
-        # PREDICTION LOGIC BY STATUS
-        # ========================================
+   
         prediction_data = {
             "user": user_name,
             "job_id": job_id,
@@ -1587,9 +1516,7 @@ def predict_job_completion_fixed(user_name: str, job_id: str):
         current_time = datetime.now()
 
         if status_name == "QUEUED":
-            # =====================================
-            # QUEUED JOB PREDICTION
-            # =====================================
+          
             if estimated_start:
                 # Use IBM's estimated start time
                 try:
@@ -1628,7 +1555,7 @@ def predict_job_completion_fixed(user_name: str, job_id: str):
                         prediction_data["estimated_wait_minutes"] = estimated_wait
                         prediction_data["confidence"] = "low"
             else:
-                # No estimated start time available
+               
                 if queue_position:
                     estimated_wait = queue_position * 5
                 else:
@@ -1643,10 +1570,7 @@ def predict_job_completion_fixed(user_name: str, job_id: str):
                 prediction_data["confidence"] = "low"
 
         elif status_name == "RUNNING":
-            # =====================================
-            # RUNNING JOB PREDICTION
-            # =====================================
-            # Job is already running, predict completion
+          
             completion_time = current_time + timedelta(seconds=avg_execution_seconds * 0.5)  # Assume 50% done
             
             prediction_data["estimated_start_time"] = "Already started"
@@ -1655,28 +1579,23 @@ def predict_job_completion_fixed(user_name: str, job_id: str):
             prediction_data["confidence"] = "medium"
             
         elif status_name == "DONE":
-            # =====================================
-            # COMPLETED JOB
-            # =====================================
+           
             prediction_data["estimated_start_time"] = "Completed"
             prediction_data["estimated_completion_time"] = "Already completed"
             prediction_data["estimated_wait_minutes"] = 0
             prediction_data["confidence"] = "certain"
-            
+              
         else:
-            # =====================================
-            # OTHER STATUSES (ERROR, CANCELLED, etc.)
-            # =====================================
             prediction_data["estimated_start_time"] = f"Job status: {status_name}"
             prediction_data["estimated_completion_time"] = "N/A"
             prediction_data["estimated_wait_minutes"] = 0
             prediction_data["confidence"] = "certain"
 
-        # Add additional context
+   
         prediction_data["average_execution_seconds"] = round(avg_execution_seconds, 1)
         prediction_data["prediction_timestamp"] = current_time.isoformat()
         
-        # Add helpful messages
+       
         if status_name == "QUEUED":
             if prediction_data["estimated_wait_minutes"] < 10:
                 prediction_data["message"] = "Your job should start soon!"
@@ -1698,9 +1617,7 @@ def predict_job_completion_fixed(user_name: str, job_id: str):
             "message": "Try refreshing or check job status manually"
         }
 
-# ========================================
-# ADDITIONAL: Batch Time Prediction
-# ========================================
+
 @app.get("/predict/batch-times/{user_name}")
 def predict_multiple_jobs(user_name: str, limit: int = 10):
     """Predict completion times for multiple jobs at once"""
@@ -1737,9 +1654,7 @@ def predict_multiple_jobs(user_name: str, limit: int = 10):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# ========================================
-# DEBUG: Job Status Details
-# ========================================
+
 @app.get("/debug/job-details/{user_name}/{job_id}")
 def debug_job_details(user_name: str, job_id: str):
     """Debug endpoint to see all available job information"""
@@ -1759,7 +1674,7 @@ def debug_job_details(user_name: str, job_id: str):
             "backend_info": {}
         }
         
-        # Check queue info
+     
         try:
             queue_info = job.queue_info()
             if queue_info:
@@ -1771,7 +1686,7 @@ def debug_job_details(user_name: str, job_id: str):
         except Exception as e:
             debug_info["queue_info_error"] = str(e)
         
-        # Check usage info
+  
         try:
             usage = job.usage()
             if usage:
@@ -1782,8 +1697,7 @@ def debug_job_details(user_name: str, job_id: str):
                 }
         except Exception as e:
             debug_info["usage_info_error"] = str(e)
-        
-        # Backend info
+
         try:
             backend = job.backend()
             backend_status = backend.status()
@@ -1799,9 +1713,7 @@ def debug_job_details(user_name: str, job_id: str):
         
     except Exception as e:
         return {"error": str(e)}
-# ---------------------------
-# WebSocket for Real-time Updates
-# ---------------------------
+
 class ConnectionManager:
     def __init__(self):
         self.active_connections: List[WebSocket] = []
@@ -1836,10 +1748,6 @@ async def websocket_endpoint(websocket: WebSocket):
     except WebSocketDisconnect:
         manager.disconnect(websocket)
 
-# ---------------------------
-# Additional Utility Endpoints
-# ---------------------------
-
 @app.get("/users")
 def get_all_users():
     """Get list of all available users"""
@@ -1847,12 +1755,6 @@ def get_all_users():
         "total_users": len(USERS),
         "users": [user["name"] for user in USERS]
     }
-
-
-
-# ---------------------------
-# NEW: Quantum Results Analysis
-# ---------------------------
 @app.get("/quantum-results/{user_name}/{job_id}")
 def analyze_quantum_results(user_name: str, job_id: str):
     """Analyze quantum measurement results for a specific job"""
@@ -1906,13 +1808,9 @@ def get_bell_state_dashboard(user_name: str):
         best_fidelity = 0
         
         for job in jobs:
-            job_data = extract_job_data(job)
-            
-            # Check if this looks like a Bell state circuit
+            job_data = extract_job_data(job) 
             if job_data["quantum_results"] and job_data["quantum_results"]["total_shots"] > 0:
                 counts = job_data["quantum_results"]["measurement_counts"]
-                
-                # Bell state circuits typically have measurements in |00⟩ and |11⟩
                 if len(counts) <= 4:  # 2-qubit circuit
                     bell_state_analysis["total_bell_circuits"] += 1
                     fidelity = job_data["quantum_results"]["fidelity_percent"]
@@ -1945,9 +1843,7 @@ def get_bell_state_dashboard(user_name: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# ---------------------------
-# Add your real Bell state data
-# ---------------------------
+
 @app.post("/add-bell-data/{user_name}")
 def add_your_bell_state_data(user_name: str):
     """Add your actual Bell state results to the tracker"""

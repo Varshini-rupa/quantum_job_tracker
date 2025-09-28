@@ -500,8 +500,7 @@
             <div class="loading-text" id="loading-text">Loading feature...</div>
         </div>
     </div>
-
-    <!-- HOME PAGE -->
+    
     <div class="page active" id="home-page">
         <div class="home-page">
             <div class="video-section">
@@ -556,7 +555,7 @@
         </div>
     </div>
 
-    <!-- DASHBOARD PAGE -->
+
     <div class="page" id="dashboard-page">
         <div class="dashboard-page">
             <div class="dashboard-header">
@@ -661,7 +660,6 @@
         </div>
     </div>
 
-    <!-- FEATURE PAGES -->
     <div class="page" id="feature-page">
         <div class="feature-page">
             <div class="dashboard-header">
@@ -713,10 +711,10 @@
             sessionStorage.removeItem('quantumTracker_isConnected');
         }
 
-        // Initialize app
+        
         document.addEventListener('DOMContentLoaded', function() {
             if (!loadSession()) {
-                // Stay on login page
+             
             }
         });
 
@@ -795,14 +793,13 @@
             currentUser = userName;
             isConnected = true;
             
-            // Save session
+       
             saveSession(type, userName);
-            
-            // Update UI
+           
             document.getElementById('current-user').textContent = userName;
             document.getElementById('connection-status').innerHTML = '<span style="color: #365C81;">●</span> Connected';
             
-            // Show researcher-only cards if researcher mode
+           
             if (type === 'researcher') {
                 hideResearcherFeatures();
                 document.querySelectorAll('.researcher-only').forEach(card => {
@@ -823,7 +820,7 @@
         async function loadDashboardData(type, userName) {
             try {
                 if (type === 'user') {
-                    // Load user-specific data
+                   
                     const jobsResponse = await fetch(`${BASE_URL}/jobs/${userName}?limit=50`);
                     if (jobsResponse.ok) {
                         const jobsData = await jobsResponse.json();
@@ -834,7 +831,7 @@
                     
                 } else if (type === 'researcher') {
                 hideResearcherFeatures();
-                    // Load researcher data
+           
                     const usersResponse = await fetch(`${BASE_URL}/users`);
                     const analyticsResponse = await fetch(`${BASE_URL}/analytics/all-users`);
                     
@@ -898,7 +895,7 @@
                 websocket.onmessage = function(event) {
                     const data = JSON.parse(event.data);
                     if (data.type === 'backend_status_update') {
-                        // Refresh dashboard data when backend status updates
+                       
                         loadDashboardData(currentUserType, currentUser);
                     }
                 };
@@ -1057,7 +1054,7 @@
                 
                 content.innerHTML = html;
                 
-                // Chart 1: Pending Jobs per Backend
+      
                 const ctx1 = document.getElementById('heatmapJobsChart').getContext('2d');
                 new Chart(ctx1, {
                     type: 'bar',
@@ -1078,7 +1075,6 @@
                     }
                 });
         
-                // Chart 2: Status distribution (Pie)
                 const ctx2 = document.getElementById('heatmapStatusChart').getContext('2d');
                 const statusCounts = {
                     UP: data.heatmap_data.filter(b => b.status.toUpperCase() === 'UP').length,
@@ -1180,7 +1176,7 @@
                 </div>
             `;
             
-            // Add enter key listener
+
             document.getElementById('chat-input').addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') {
                     sendChatMessage();
@@ -1195,7 +1191,7 @@
             
             if (!question) return;
             
-            // Add user message
+   
             messages.innerHTML += `
                 <div style="margin-bottom: 1rem;">
                     <div style="background: #365C81; color: white; padding: 0.5rem 1rem; border-radius: 12px; display: inline-block; max-width: 70%; margin-left: 30%;">
@@ -1220,7 +1216,6 @@
                 
                 const data = await response.json();
                 
-                // Add bot response
                 messages.innerHTML += `
                     <div style="margin-bottom: 1rem;">
                         <div style="background: white; border: 1px solid #e0e0e0; padding: 0.5rem 1rem; border-radius: 12px; display: inline-block; max-width: 70%;">
@@ -1291,8 +1286,7 @@
                 `;
                 
                 content.innerHTML = html;
-        
-                // Build chart
+       
                 const ctx = document.getElementById('leaderboardChart').getContext('2d');
                 new Chart(ctx, {
                     type: 'bar',
@@ -1680,7 +1674,7 @@
                 
                 content.innerHTML = html;
                 
-                // Prepare data for line chart
+         
                 const dailyCounts = Object.entries(trends.daily_job_counts);
                 if (dailyCounts.length > 0) {
                     const labels = dailyCounts.map(([date, _]) => new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
@@ -1793,27 +1787,26 @@
         }
 
         function backToLogin() {
-            // Clear intervals and connections
+         
             if (refreshInterval) clearInterval(refreshInterval);
             if (websocket) websocket.close();
             
-            // Clear session
+         
             clearSession();
             
-            // Reset state
+
             currentUser = '';
             isConnected = false;
-            
-            // Navigate back to login
+  
             document.getElementById('dashboard-page').classList.remove('active');
             document.getElementById('feature-page').classList.remove('active');
             document.getElementById('home-page').classList.add('active');
             
-            // Reset form
+         
             document.getElementById('user-select').value = '';
             hideError();
             
-            // Reset user type selection
+      
             currentUserType = 'user';
             document.querySelectorAll('.user-type-btn').forEach(btn => {
                 btn.classList.remove('active');
@@ -1825,13 +1818,12 @@
             });
             document.getElementById('user-form').classList.add('active');
             
-            // Reset dashboard values
             document.getElementById('jobs-completed').textContent = '0';
             document.getElementById('jobs-running').textContent = '0';
             document.getElementById('jobs-queued').textContent = '0';
             document.getElementById('connection-status').innerHTML = '<span style="color: #223047;">●</span> Disconnected';
             
-            // Hide researcher cards
+    
             document.querySelectorAll('.researcher-only').forEach(card => {
                 card.classList.remove('show');
             });
@@ -1848,11 +1840,11 @@
             errorDiv.style.display = 'none';
         }
 
-        // Initialize app when page loads
+      
         window.addEventListener('load', function() {
-            // Try to restore session
+         
             if (!loadSession()) {
-                // Stay on login page
+              
                 console.log('No saved session found');
             }
         });
